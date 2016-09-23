@@ -17,13 +17,14 @@ experiment_path = "" #automatically assigned
 DEVNULL = open(os.devnull, 'wb')
 SEED = 12345678
 
-nPeers = slotsTP = slotsMP = sizeTeam = nPeersTeam = nInitialTrusted = 0
+nPeers = slotsTP = slotsMP = slotsWIP = nPeersTeam = nInitialTrusted = 0
 
-port = 60000
-playerPort = 61000
+port = 50000
+playerPort = 51000
 
 currentRound = 0
-
+rounds_for_stability = 100
+first_stability_round = 0
 LAST_ROUND_NUMBER = 0
 
 INIT_TIME = 0
@@ -52,7 +53,7 @@ WEIBULL_TIME = 60
 
 def checkdir():
     global experiment_path
-    experiment_path = datetime.datetime.now().strftime("%d%m%y%H%M") + "n" + str(nPeersTeam) + "t" +  str(slotsTP+nInitialTrusted) + "m" + str(slotsMP) + "z" + str(sizeTeam) + "d" + str(TOTAL_TIME)
+    experiment_path = datetime.datetime.now().strftime("%d%m%y%H%M") + "n" + str(nPeersTeam) + "t" +  str(slotsTP+nInitialTrusted) + "m" + str(slotsMP) + "z" + str(slotsWIP) + "d" + str(TOTAL_TIME)
     
     if not os.path.exists(experiment_path):
         os.mkdir(experiment_path)
@@ -72,21 +73,21 @@ def killall():
 
 def runStream():
     if platform.system() == "Linux":
-        run("cvlc Big_Buck_Bunny_small.ogv --sout \"#duplicate{dst=standard{mux=ogg,dst=:8080/test.ogg,access=http}}\"")
+        run("cvlc Big_Buck_Bunny_small.ogv --sout \"#duplicate{dst=standard{mux=ogg,dst=:9090/test.ogg,access=http}}\"")
     else:
-        run("/Applications/VLC.app/Contents/MacOS/VLC Big_Buck_Bunny_small.ogv --sout \"#duplicate{dst=standard{mux=ogg,dst=:8080/test.ogg,access=http}}\"")
+        run("/Applications/VLC.app/Contents/MacOS/VLC Big_Buck_Bunny_small.ogv --sout \"#duplicate{dst=standard{mux=ogg,dst=:9090/test.ogg,access=http}}\"")
     time.sleep(0.5)
 
 def runSplitter(ds = False):
     prefix = ""
     if ds: prefix = "ds"
-    run("./console/bin/splitter --strpeds --team_port 8001 --source_port 8080 --max_number_of_chunk_loss 32 --chunk_size 256 --buffer_size 1024 --strpeds_log " + experiment_path + "/splitter.log --p_mpl " + str(P_MPL) + " --p_tpl " + str(P_TPL), open("{0}/splitter.out".format(experiment_path), "w"))
+    run("./console/bin/splitter --strpeds --team_port 9001 --source_port 9090 --max_number_of_chunk_loss 32 --chunk_size 256 --buffer_size 1024 --strpeds_log " + experiment_path + "/splitter.log --p_mpl " + str(P_MPL) + " --p_tpl " + str(P_TPL), open("{0}/splitter.out".format(experiment_path), "w"))
     time.sleep(0.5)
 
 def runPeer(trusted = False, malicious = False, ds = False):
     global port, playerPort
     #run peer
-    runStr = "./console/bin/peer --splitter_port 8001 --use_localhost --team_port {0} --player_port {1}".format(port, playerPort)
+    runStr = "./console/bin/peer --splitter_port 9001 --use_localhost --team_port {0} --player_port {1}".format(port, playerPort)
 
     peertype = "WIP"
 
@@ -97,7 +98,6 @@ def runPeer(trusted = False, malicious = False, ds = False):
         runStr += " --malicious --persistent --mptr {0}".format(MPTR)
     if not malicious:
          runStr += " --strpeds_log " + experiment_path + "/peer{0}.log".format(port)
-
 
     #Weibull distribution in this random number:
     if (peertype == "WIP"):
@@ -118,8 +118,6 @@ def runPeer(trusted = False, malicious = False, ds = False):
     #proc = run("nc 127.0.0.1 {0}".format(playerPort), DEVNULL, alias, ttl, peertype)
 
     port, playerPort = port + 1, playerPort + 1
-
-
 
 def check(x):
     with open("{0}/splitter.log".format(experiment_path)) as fh:
@@ -165,11 +163,21 @@ def initializeTeam(nPeers, nInitialTrusted):
        print Color.green, "In: <--", Color.none, "WIP 127.0.0.1:{0}".format(port),
        runPeer(False, False, True)
 
+def isTheTeamStable():
+    global rounds_for_stability, slotsTP, slotsMP, slotsWIP, first_stability_round
+    
+    if first_stability_round == 0:
+        if slotsTP == slotsMP == slotsWIP == 0:
+                first_stability_round = findLastRound()
+    else:
+        if (findLastRound() - first_stability_round) > rounds_for_stability:
+            return True    
+
 def churn():
     global  slotsTP, nPeersTeam, slotsMP, trusted_peers, weibull_expelled, angry_peers_retired
 
-    #while checkForRounds():
-    while TOTAL_TIME > (time.time()-INIT_TIME):
+    while not isTheTeamStable():
+    #while TOTAL_TIME > (time.time()-INIT_TIME):
 
         #print("slotsMP: ",slotsMP, "slotsTP: ", slotsTP, "nPeersTeam: ", nPeersTeam)
         
@@ -285,28 +293,30 @@ def getLastBufferFor(inFile):
     return fullness
 
 def addRegularOrMaliciousPeer():
-    global slotsMP, nPeersTeam, slotsTP, currentRound, WACLR_max_var
-    if sizeTeam > nPeersTeam:
-        r = random.randint(1,100)
-        if r <= P_MP:
-            if slotsMP>0:
-                with open("malicious.txt", "a") as fh:
-                    fh.write('127.0.0.1:{0}\n'.format(port))
-                    fh.close()
-                cleanline()
-                print Color.green, "In: <--", Color.none, "MP 127.0.0.1:{0}".format(port),
-	        slotsMP-=1
-	        nPeersTeam+=1
-                runPeer(False, True, True)
+    global slotsMP, nPeersTeam, slotsWIP, slotsTP, currentRound, WACLR_max_var
+    #if slotsWIP > nPeersTeam:
+    r = random.randint(1,100)
+    if r <= P_MP:
+        if slotsMP>0:
+            with open("malicious.txt", "a") as fh:
+                fh.write('127.0.0.1:{0}\n'.format(port))
+                fh.close()
+            cleanline()
+            print Color.green, "In: <--", Color.none, "MP 127.0.0.1:{0}".format(port),
+            slotsMP-=1
+            nPeersTeam+=1
+            runPeer(False, True, True)
 
-        r = random.randint(1,100)
-        if r <= P_WIP:
+    r = random.randint(1,100)
+    if r <= P_WIP:
+        if slotsWIP>0:
             #with open("regular.txt", "a") as fh:
             #    fh.write('127.0.0.1:{0}\n'.format(port))
             #    fh.close()
             cleanline()
             print Color.green, "In: <--", Color.none, "WIP 127.0.0.1:{0}".format(port),
-	    nPeersTeam+=1
+	    slotsWIP-=1
+            nPeersTeam+=1
             runPeer(False, False, True)
 
     currentRound = findLastRound()
@@ -314,7 +324,7 @@ def addRegularOrMaliciousPeer():
     if round > 0:
         WACLR_max_var = WACLR_max + (1/(round/(round + 100.))) - 1
 
-    progress ="Round "+ str(round)+" Size "+str(nPeersTeam)+"/"+str(sizeTeam)+" TP slots "+str(slotsTP) + " MP slots "+str(slotsMP)
+    progress ="Round "+ str(round)+" Size "+str(nPeersTeam)+"/"+str(slotsWIP)+" TP slots "+str(slotsTP) + " MP slots "+str(slotsMP)
     sys.stdout.flush()
     print progress,
     print str(int(time.time()-INIT_TIME))+"/"+str(TOTAL_TIME),
@@ -378,7 +388,7 @@ def cleanline():
     print '\r', " "*60, '\r',
 
 def main(args):
-    global nPeers, slotsTP, nInitialTrusted, slotsMP, sizeTeam, nPeersTeam, INIT_TIME, TOTAL_TIME, WEIBULL_SHAPE, WEIBULL_TIME
+    global nPeers, slotsTP, nInitialTrusted, slotsMP, slotsWIP, nPeersTeam, INIT_TIME, TOTAL_TIME, WEIBULL_SHAPE, WEIBULL_TIME
 
     random.seed(SEED)
 
@@ -392,7 +402,7 @@ def main(args):
     nPeers = 2
     slotsTP = nInitialTrusted = 1
     slotsMP = 0
-    sizeTeam = nPeersTeam = 2
+    slotsWIP = nPeersTeam = 2
     for opt, arg in opts:
         if opt == "-n":
             nPeers = int(arg)
@@ -403,7 +413,7 @@ def main(args):
         elif opt == "-m":
             slotsMP = int(arg)
         elif opt == "-z":
-	    sizeTeam = int(arg)
+	    slotsWIP = int(arg)
         elif opt == "-s":
             ds = True
         elif opt == "-d":
