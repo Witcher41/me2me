@@ -11,10 +11,10 @@ clone with `--recursive` argument: `git clone --recursive ...`
 ```
 $ [sudo] apt-get install libboost-all-dev
 $ [sudo] apt-get install libssl-dev
-$ [sudo] apt-get install python3-pip
 $ [sudo] apt-get install python3-numpy
-$ [sudo] pip3 install pycrypto
-
+$ [sudo] apt-get install cvlc
+$ [sudo] apt-get install cmake
+$ [sudo] apt-get install gnuplot
 ```
 
 ## Build the P2PSP Library
