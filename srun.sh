@@ -11,19 +11,21 @@ echo -e "#TTPs\t#TMPs\t#MEAN\t#STD\t#WIPs\t#MPs\t#TPs\t#Size" >> data/results.da
 	#for (( k=0; k<3; k++ ))
 	#do
 	    DATE=$(date "+%d%m%y%H%M")
-	    srun -p ibbullion -o simulator.txt ./simulator.py -n 25 -i 0 -t $i -m $j -z 100 -d 570 -c 800
+	    srun -p ibmulticore2 -o simulator.txt ./simulator.py -n 25 -i 0 -t $i -m $j -z 100 -c 800 -p ${DATE}n25t${i}m${j}z100
 
-	    MEAN=$(cat ${DATE}n25t${i}m${j}z100d570/sample.dat | awk '{ sum += $8; n++ } END { print sum / n;}')
-	    STD=$(cat ${DATE}n25t${i}m${j}z100d570/sample.dat | awk '{ sum += $8; sumsqrt += $8^2; n++ } END { print sqrt(sumsqrt/n-(sum/n)^2) }')
+	    MEAN=$(cat ${DATE}n25t${i}m${j}z100/sample.dat | awk '{ sum += $8; n++ } END { print sum / n;}')
+	    STD=$(cat ${DATE}n25t${i}m${j}z100/sample.dat | awk '{ sum += $8; sumsqrt += $8^2; n++ } END { print sqrt(sumsqrt/n-(sum/n)^2) }')
 
-	    tail -n 1 ${DATE}n25t${i}m${j}z100d570/sample.dat | awk '{print $2,"\t",$3,"\t",$4,"\t",$5;}' >> team.dat
+	    tail -n 1 ${DATE}n25t${i}m${j}z100/sample.dat | awk '{print $2,"\t",$3,"\t",$4,"\t",$5;}' >> team.dat
+
+	    tail -n+2 sample.dat | awk '{print $2/$5, "\t", $3/$5, "\t", $4/$5;}' | awk '{wip+=$1;mp+=$2;tp+=$3;n++;}END{print wip/n, "\t", mp/n,"\t",tp/n;}' >> stats-round.dat
 
 	    echo -e "${i}\t${j}\t${MEAN}\t${STD}" >> data/${i}${j}.dat
 
-	    tar -zcvf ${DATE}n25t${i}m${j}z100d570.tgz ${DATE}n25t${i}m${j}z100d570
-	    scp ${DATE}n25t${i}m${j}z100d570.tgz bullxual.hpca.ual.es:~/experiments-copy
-	    rm -r ${DATE}n25t${i}m${j}z100d570
-	    rm ${DATE}n25t${i}m${j}z100d570.tgz
+	    tar -zcvf ${DATE}n25t${i}m${j}z100.tgz ${DATE}n25t${i}m${j}z100
+	    scp ${DATE}n25t${i}m${j}z100.tgz bullxual.hpca.ual.es:~/experiments-copy
+	    rm -r ${DATE}n25t${i}m${j}z100
+	    rm ${DATE}n25t${i}m${j}z100.tgz
 	#done
 
 	MEAN=$(cat  data/${i}${j}.dat | awk '{ sum += $3; n++ } END { print sum / n;}')

@@ -49,11 +49,12 @@ WACLR_max = 1.
 WACLR_max_var = 1.
 alpha = 0.25
 WEIBULL_SHAPE = 1.
-WEIBULL_TIME = 60
+WEIBULL_TIME = 1000
 
 def checkdir():
     global experiment_path
-    experiment_path = datetime.datetime.now().strftime("%d%m%y%H%M") + "n" + str(nPeersTeam) + "t" +  str(slotsTP+nInitialTrusted) + "m" + str(slotsMP) + "z" + str(slotsWIP) + "d" + str(TOTAL_TIME)
+    if experiment_path == "":
+        experiment_path = datetime.datetime.now().strftime("%d%m%y%H%M") + "n" + str(nPeersTeam) + "t" +  str(slotsTP+nInitialTrusted) + "m" + str(slotsMP) + "z" + str(slotsWIP)
     
     if not os.path.exists(experiment_path):
         os.mkdir(experiment_path)
@@ -388,21 +389,21 @@ def cleanline():
     print '\r', " "*60, '\r',
 
 def main(args):
-    global nPeers, slotsTP, nInitialTrusted, slotsMP, slotsWIP, nPeersTeam, INIT_TIME, TOTAL_TIME, WEIBULL_SHAPE, WEIBULL_TIME
+    global nPeers, slotsTP, nInitialTrusted, slotsMP, slotsWIP, nPeersTeam, INIT_TIME, TOTAL_TIME, WEIBULL_SHAPE, WEIBULL_TIME, experiment_path
 
     random.seed(SEED)
 
     try:
-        opts, args = getopt.getopt(args, "n:t:i:m:z:s:d:w:c:")
+        opts, args = getopt.getopt(args, "n:t:i:m:z:s:d:w:c:p:")
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
     ds = False
     nPeers = 2
-    slotsTP = nInitialTrusted = 1
-    slotsMP = 0
-    slotsWIP = nPeersTeam = 2
+    slotsTP = slotsMP = slotsWIP = 0
+    nInitialTrusted = 1
+    nPeersTeam = 3
     for opt, arg in opts:
         if opt == "-n":
             nPeers = int(arg)
@@ -413,7 +414,7 @@ def main(args):
         elif opt == "-m":
             slotsMP = int(arg)
         elif opt == "-z":
-	    slotsWIP = int(arg)
+	    slotsWIP = int(arg) - nPeers
         elif opt == "-s":
             ds = True
         elif opt == "-d":
@@ -422,6 +423,8 @@ def main(args):
             WEIBULL_SHAPE = float(arg)
         elif opt == "-c":
             WEIBULL_TIME = int(arg)
+        elif opt == "-p":
+            experiment_path = str(arg)
 
     print 'running initial team with {0} peers ({1} trusted)'.format(nPeers, nInitialTrusted)
 
@@ -466,7 +469,8 @@ def main(args):
     print "WACLR_max = " + str(WACLR_max),
     print "alpha = " + str(alpha),
     print "WEIBULL_SHAPE = " + str(WEIBULL_SHAPE),
-    print "WEIBULL_TIME = " + str(WEIBULL_TIME)
+    print "WEIBULL_TIME = " + str(WEIBULL_TIME),
+    print "first_stability_round = " + str(first_stability_round) 
   
     print "******************* Parsing Results  ********************"
     path = experiment_path + "/sample.dat"
