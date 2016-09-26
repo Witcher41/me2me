@@ -469,7 +469,7 @@ def main(args):
     print "WACLR_max = " + str(WACLR_max),
     print "alpha = " + str(alpha),
     print "WEIBULL_SHAPE = " + str(WEIBULL_SHAPE),
-    print "WEIBULL_TIME = " + str(WEIBULL_TIME),
+    print "WEIBULL_TIME = " + str(WEIBULL_TIME)
     print "STABLE_ROUND = " + str(first_stability_round) 
   
     print "******************* Parsing Results  ********************"
