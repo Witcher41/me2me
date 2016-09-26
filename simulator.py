@@ -470,7 +470,7 @@ def main(args):
     print "alpha = " + str(alpha),
     print "WEIBULL_SHAPE = " + str(WEIBULL_SHAPE),
     print "WEIBULL_TIME = " + str(WEIBULL_TIME),
-    print "first_stability_round = " + str(first_stability_round) 
+    print "STABLE_ROUND = " + str(first_stability_round) 
   
     print "******************* Parsing Results  ********************"
     path = experiment_path + "/sample.dat"

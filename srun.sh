@@ -18,7 +18,9 @@ echo -e "#TTPs\t#TMPs\t#MEAN\t#STD\t#WIPs\t#MPs\t#TPs\t#Size" >> data/results.da
 
 	    tail -n 1 ${DATE}n25t${i}m${j}z100/sample.dat | awk '{print $2,"\t",$3,"\t",$4,"\t",$5;}' >> team.dat
 
-	    tail -n+2 sample.dat | awk '{print $2/$5, "\t", $3/$5, "\t", $4/$5;}' | awk '{wip+=$1;mp+=$2;tp+=$3;n++;}END{print wip/n, "\t", mp/n,"\t",tp/n;}' >> stats-round.dat
+	    tail -n+2 ${DATE}n25t${i}m${j}z100/sample.dat | awk '{print $1,"\t", $2/$5, "\t", $3/$5, "\t", $4/$5;}' | awk '{ if (n==0){ini=$1};fin=$1;wip+=$2;mp+=$3;tp+=$4;n++;}END{print wip/n, "\t", mp/n,"\t",tp/n,"\t",ini,"\t",fin;}' >> stats-round.dat
+
+	    cat simulator.txt | awk '/STABLE_ROUND =/{print $3}' > stable-round.dat
 
 	    echo -e "${i}\t${j}\t${MEAN}\t${STD}" >> data/${i}${j}.dat
 
@@ -30,10 +32,13 @@ echo -e "#TTPs\t#TMPs\t#MEAN\t#STD\t#WIPs\t#MPs\t#TPs\t#Size" >> data/results.da
 
 	MEAN=$(cat  data/${i}${j}.dat | awk '{ sum += $3; n++ } END { print sum / n;}')
 	STD=$(cat  data/${i}${j}.dat | awk '{ sum += $4; n++ } END { print sum / n;}')
+	STATS=$(cat stats-round.dat | awk '{ c1 += $1; c2 += $2; c3 += $3; c4 += $4; c5 +=$5; c6 +=$6; n++; } END { print c1 / n,"\t",c2 / n,"\t", c3 / n,"\t",c4/n ,"\t", c5/n ,"\t", c6/n; }')
+	ROUNDSTB=$(cat stable-round.dat | awk '{ sum += $4; n++ } END { print sum / n;}')
 	TEAM=$(cat team.dat | awk '{ c1 += $1; c2 += $2; c3 += $3; c4 += $4; n++; } END { print c1 / n,"\t",c2 / n,"\t", c3 / n,"\t",c4 /n; }')
 	rm -r team.dat
 
-	echo -e "${i}\t${j}\t${MEAN}\t${STD}\t${TEAM}" >> data/results.dat
+	echo -e "${i}\t${j}\t${MEAN}\t${STD}\t${TEAM}" >> data/results.dat	
+	echo -e "${i}\t${j}\t${STATS}\t${ROUNDSTB}\t${MEAN}\t${STD}" >> data/stats.dat
 
     done
     echo "" >> data/results.dat
