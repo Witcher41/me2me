@@ -2,11 +2,11 @@
 
 # sbatch -N 1 -n 1 -p ibmulticore2 --exclusive ./srun.sh
 
-for (( i=50; i<=100; i=i+10 ))
+for (( i=0; i<=100; i=i+10 ))
 do
 echo -e "#TTPs\t#TMPs\t#MEAN\t#STD\t#WIPs\t#MPs\t#TPs\t#Size" >> data/results.dat
 
-    for (( j=50; j<=100; j=j+10 ))
+    for (( j=0; j<=100; j=j+10 ))
     do
 	#for (( k=0; k<3; k++ ))
 	#do
