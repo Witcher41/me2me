@@ -2,16 +2,18 @@
 
 # sbatch -N 1 -n 1 -p ibmulticore2 --exclusive ./srun.sh
 
-for (( i=0; i<=100; i=i+10 ))
+for (( i=100; i<=100; i=i+10 ))
 do
 echo -e "#TTPs\t#TMPs\t#MEAN\t#STD\t#WIPs\t#MPs\t#TPs\t#Size" >> data/results.dat
 
-    for (( j=0; j<=100; j=j+10 ))
+    for (( j=100; j<=100; j=j+10 ))
     do
 	#for (( k=0; k<3; k++ ))
 	#do
 	    DATE=$(date "+%d%m%y%H%M")
-	    srun -p ibmulticore2 -o simulator.txt ./simulator.py -n 25 -i 0 -t $i -m $j -z 100 -p ${DATE}n25t${i}m${j}z100
+	    srun -p ibmulticore2 --exclusive -o simulator.txt ./simulator.py -n 15 -i 0 -t $i -m $j -z 100 -p ${DATE}n25t${i}m${j}z100
+	    #srun -p ibbullion --exclusive -o simulator.txt ./simulator.py -n 15 -i 0 -t $i -m $j -z 100 -p ${DATE}n25t${i}m${j}z100
+
 
 	    MEAN=$(tail -n+2 ${DATE}n25t${i}m${j}z100/sample.dat | awk '{ sum += $8; n++ } END { print sum / n;}')
 	    STD=$(tail -n+2 100 ${DATE}n25t${i}m${j}z100/sample.dat | awk '{ sum += $8; sumsqrt += $8^2; n++ } END { print sqrt(sumsqrt/n-(sum/n)^2) }')
@@ -26,7 +28,7 @@ echo -e "#TTPs\t#TMPs\t#MEAN\t#STD\t#WIPs\t#MPs\t#TPs\t#Size" >> data/results.da
 
 	    tar -zcvf ${DATE}n25t${i}m${j}z100.tgz ${DATE}n25t${i}m${j}z100
 	    scp ${DATE}n25t${i}m${j}z100.tgz bullxual.hpca.ual.es:~/experiments-copy
-	    rm -r ${DATE}n25t${i}m${j}z100
+	    #rm -r ${DATE}n25t${i}m${j}z100
 	    rm ${DATE}n25t${i}m${j}z100.tgz
 	#done
 

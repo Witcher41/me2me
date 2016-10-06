@@ -41,7 +41,8 @@ buffer_values = {}
 P_IN = 100
 P_OUT = 25
 P_WIP = 100
-P_MP = 100
+P_MP = 20
+P_TP = 80
 P_MPL = 100
 P_TPL = 100
 MPTR = 2
@@ -49,7 +50,7 @@ WACLR_max = 1.
 WACLR_max_var = 1.
 alpha = 0.25
 WEIBULL_SHAPE = 1.
-WEIBULL_TIME = 1000
+WEIBULL_TIME = 8000
 
 def checkdir():
     global experiment_path
@@ -74,15 +75,15 @@ def killall():
 
 def runStream():
     if platform.system() == "Linux":
-        run("cvlc Big_Buck_Bunny_small.ogv --sout \"#duplicate{dst=standard{mux=ogg,dst=:8080/test.ogg,access=http}}\"")
+        run("cvlc Big_Buck_Bunny_small.ogv --sout \"#duplicate{dst=standard{mux=ogg,dst=:8888/test.ogg,access=http}}\"")
     else:
-        run("/Applications/VLC.app/Contents/MacOS/VLC Big_Buck_Bunny_small.ogv --sout \"#duplicate{dst=standard{mux=ogg,dst=:8080/test.ogg,access=http}}\"")
+        run("/Applications/VLC.app/Contents/MacOS/VLC Big_Buck_Bunny_small.ogv --sout \"#duplicate{dst=standard{mux=ogg,dst=:8888/test.ogg,access=http}}\"")
     time.sleep(0.5)
 
 def runSplitter(ds = False):
     prefix = ""
     if ds: prefix = "ds"
-    run("./console/bin/splitter --strpeds --team_port 8001 --source_port 8080 --max_number_of_chunk_loss 32 --chunk_size 256 --buffer_size 1024 --strpeds_log " + experiment_path + "/splitter.log --p_mpl " + str(P_MPL) + " --p_tpl " + str(P_TPL), open("{0}/splitter.out".format(experiment_path), "w"))
+    run("./console/bin/splitter --strpeds --team_port 8001 --source_port 8888 --max_number_of_chunk_loss 32 --chunk_size 256 --buffer_size 1024 --strpeds_log " + experiment_path + "/splitter.log --p_mpl " + str(P_MPL) + " --p_tpl " + str(P_TPL), open("{0}/splitter.out".format(experiment_path), "w"))
     time.sleep(0.5)
 
 def runPeer(trusted = False, malicious = False, ds = False):
@@ -188,8 +189,8 @@ def churn():
             addRegularOrMaliciousPeer()
 
         # Arrival of trusted peers
-        #r = random.randint(1,100)
-        if r <= P_IN and slotsTP > 0:
+        r_tp = random.randint(1,100)
+        if r <= P_IN and r_tp <=P_TP and slotsTP > 0:
             cleanline()
             print Color.green, "In: <--", Color.none, "TP 127.0.0.1:{0}".format(port),
             with open("trusted.txt", "a") as fh:
@@ -219,6 +220,11 @@ def churn():
             
         # Departure of peers
         for p in processes:
+
+	    # Based on expulsions
+	    #if (p[0].poll() == None):
+	    #if p[1] in tp_expelled_by_splitter:
+	    #p[0].terminate()
 
             # Based on times
             r = random.randint(1,100)
