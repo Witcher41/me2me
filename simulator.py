@@ -41,8 +41,8 @@ buffer_values = {}
 P_IN = 100
 P_OUT = 25
 P_WIP = 100
-P_MP = 20
-P_TP = 80
+P_MP = 100
+P_TP = 100
 P_MPL = 100
 P_TPL = 100
 MPTR = 2
@@ -113,7 +113,7 @@ def runPeer(trusted = False, malicious = False, ds = False):
         ttl = None
     
     run(runStr, open("{0}/peer{1}.out".format(experiment_path,port), "w"), "127.0.0.1:"+str(port), ttl , peertype)
-    time.sleep(1)
+    #time.sleep(0.1)
 
 
     #run netcat
@@ -178,85 +178,90 @@ def isTheTeamStable():
 def churn():
     global  slotsTP, nPeersTeam, slotsMP, trusted_peers, weibull_expelled, angry_peers_retired
 
+    last_round = 0
     while not isTheTeamStable():
     #while TOTAL_TIME > (time.time()-INIT_TIME):
 
         #print("slotsMP: ",slotsMP, "slotsTP: ", slotsTP, "nPeersTeam: ", nPeersTeam)
-        
-        # Arrival of regular or malicious peers
-        r = random.randint(1,100)
-        if r <= P_IN:
-            addRegularOrMaliciousPeer()
+        current_round = findLastRound()
+        if last_round < current_round:
+            last_round = current_round
+            print("-------> Current Round: "+str(current_round))
 
-        # Arrival of trusted peers
-        r_tp = random.randint(1,100)
-        if r <= P_IN and r_tp <=P_TP and slotsTP > 0:
-            cleanline()
-            print Color.green, "In: <--", Color.none, "TP 127.0.0.1:{0}".format(port),
-            with open("trusted.txt", "a") as fh:
-                fh.write('127.0.0.1:{0}\n'.format(port))
-                fh.close()
-            trusted_peers.append('127.0.0.1:{0}'.format(port))
-            slotsTP-=1
-            nPeersTeam+=1
-            runPeer(True, False, True)
+            # Arrival of regular or malicious peers
+            r = random.randint(1,100)
+            if r <= P_IN:
+                addRegularOrMaliciousPeer()
 
-        # Malicious peers expelled by splitter (using the TP information)
-        anyExpelled = checkForPeersExpelled()
-        if anyExpelled[0] != None:
+            # Arrival of trusted peers
+            r_tp = random.randint(1,100)
+            if r <= P_IN and r_tp <=P_TP and slotsTP > 0:
+                cleanline()
+                print Color.green, "In: <--", Color.none, "TP 127.0.0.1:{0}".format(port),
+                with open("trusted.txt", "a") as fh:
+                    fh.write('127.0.0.1:{0}\n'.format(port))
+                    fh.close()
+                trusted_peers.append('127.0.0.1:{0}'.format(port))
+                slotsTP-=1
+                nPeersTeam+=1
+                runPeer(True, False, True)
+
+            # Malicious peers expelled by splitter (using the TP information)
+            anyExpelled = checkForPeersExpelled()
+            if anyExpelled[0] != None:
              
-            if anyExpelled[0] == "MP":
-                print Color.red,
-                #slotsMP+=1
-            else:
-                print Color.purple,
-                #slotsTP+=1
+                if anyExpelled[0] == "MP":
+                    print Color.red,
+                    #slotsMP+=1
+                else:
+                    print Color.purple,
+                    #slotsTP+=1
 
-            cleanline()
-            print "Out: -->", anyExpelled[0], anyExpelled[1], Color.none
-	    nPeersTeam-=1
+                    cleanline()
+                    print "Out: -->", anyExpelled[0], anyExpelled[1], Color.none
+                    nPeersTeam-=1
 
-        checkForBufferTimes()
+            checkForBufferTimes()
             
-        # Departure of peers
-        for p in processes:
+            # Departure of peers
+            for p in processes:
 
 	    # Based on expulsions
 	    #if (p[0].poll() == None):
 	    #if p[1] in tp_expelled_by_splitter:
 	    #p[0].terminate()
 
-            # Based on times
-            r = random.randint(1,100)
-            if (r <= P_OUT) and (p[0].poll() == None):
-                if p[2] != None and p[2] <= (time.time()-INIT_TIME):
-                    if p[1] not in mp_expelled_by_tps and p[1] not in weibull_expelled and p[1] not in angry_peers_retired:
-                        cleanline()
-                        print Color.red, "Out:-->", Color.none, p[3], p[1]
+                # Based on times
+                r = random.randint(1,100)
+                if (r <= P_OUT) and (p[0].poll() == None):
+                    if p[2] != None and p[2] <= (time.time()-INIT_TIME):
+                        if p[1] not in mp_expelled_by_tps and p[1] not in weibull_expelled and p[1] not in angry_peers_retired:
+                            cleanline()
+                            print Color.red, "Out:-->", Color.none, p[3], p[1]
                         
-                        p[0].terminate()
+                            p[0].terminate()
 
-                        weibull_expelled.append(p[1])
+                            weibull_expelled.append(p[1])
                         
-                        if p[3] == "TP":
-                            pass
-                            #slotsTP+=1
+                            if p[3] == "TP":
+                                pass
+                                #slotsTP+=1
 
-                        nPeersTeam-=1
+                            nPeersTeam-=1
 
-            # Based on BFR
-            r = random.randint(1,100)
-            if (r <= P_OUT) and (p[0].poll() == None):
-                if (p[1] in angry_peers):
-                    if p[1] not in angry_peers_retired:
-                        cleanline()
-                        print Color.red, "Out: -->", p[3], p[1], "(by WACLR_max)", "WACLR"  ,buffer_values[p[1]], "WACLR Max" , WACLR_max_var , "round", findLastRound() , Color.none
+                # Based on BFR
+                r = random.randint(1,100)
+                if (r <= P_OUT) and (p[0].poll() == None):
+                    if (p[1] in angry_peers):
+                        if p[1] not in angry_peers_retired:
+                            cleanline()
+                            print Color.red, "Out: -->", p[3], p[1], "(by WACLR_max)", "WACLR"  ,buffer_values[p[1]], "WACLR Max" , WACLR_max_var , "round", findLastRound() , Color.none
 
-                        p[0].terminate()
-
-                        angry_peers_retired.append(p[1])
-
-                        nPeersTeam-=1
+                            p[0].terminate()
+                            
+                            angry_peers_retired.append(p[1])
+                            
+                            nPeersTeam-=1
 
         #print "Timer: "+ str(TIMER)
         #time.sleep(0.5)

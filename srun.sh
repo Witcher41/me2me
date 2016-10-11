@@ -11,7 +11,7 @@ echo -e "#TTPs\t#TMPs\t#MEAN\t#STD\t#WIPs\t#MPs\t#TPs\t#Size" >> data/results.da
 	#for (( k=0; k<3; k++ ))
 	#do
 	    DATE=$(date "+%d%m%y%H%M")
-	    srun -p ibmulticore2 --exclusive -o simulator.txt ./simulator.py -n 15 -i 0 -t $i -m $j -z 100 -p ${DATE}n25t${i}m${j}z100
+	    srun -p ibmulticore2 -w bullxual18 --exclusive -o simulator.txt ./simulator.py -n 20 -i 0 -t $i -m $j -z 100 -p ${DATE}n25t${i}m${j}z100
 	    #srun -p ibbullion --exclusive -o simulator.txt ./simulator.py -n 15 -i 0 -t $i -m $j -z 100 -p ${DATE}n25t${i}m${j}z100
 
 
@@ -26,9 +26,13 @@ echo -e "#TTPs\t#TMPs\t#MEAN\t#STD\t#WIPs\t#MPs\t#TPs\t#Size" >> data/results.da
 
 	    echo -e "${i}\t${j}\t${MEAN}\t${STD}" >> data/${i}${j}.dat
 
+	    mkdir results/${DATE}n25t${i}m${j}z100
+	    cp ${DATE}n25t${i}m${j}z100/*.svg results/${DATE}n25t${i}m${j}z100/
+	    cp ${DATE}n25t${i}m${j}z100/sample.dat results/${DATE}n25t${i}m${j}z100/
+
 	    tar -zcvf ${DATE}n25t${i}m${j}z100.tgz ${DATE}n25t${i}m${j}z100
 	    scp ${DATE}n25t${i}m${j}z100.tgz bullxual.hpca.ual.es:~/experiments-copy
-	    #rm -r ${DATE}n25t${i}m${j}z100
+	    rm -r ${DATE}n25t${i}m${j}z100
 	    rm ${DATE}n25t${i}m${j}z100.tgz
 	#done
 
