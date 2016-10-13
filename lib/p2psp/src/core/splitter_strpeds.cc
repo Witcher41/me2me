@@ -577,10 +577,14 @@ void SplitterSTRPEDS::SetLogFile(const std::string &filename) {
 void SplitterSTRPEDS::SetLogging(bool enabled) { logging_ = enabled; }
 
 void SplitterSTRPEDS::LogMessage(const std::string &message) {
-  log_file_.open(filename_, ofstream::out | ofstream::app);
-  log_file_ << BuildLogMessage(message)+'\n' << std::flush;
+  //log_file_.open(filename_, ofstream::out | ofstream::app);
+  log_file_ = fopen(filename_.c_str(), "a");
+  //log_file_ << BuildLogMessage(message)+'\n' << std::flush;
+  fputs((BuildLogMessage(message)+'\n').c_str(), log_file_);
   //log_file_.flush();
-  log_file_.close();
+  fclose(log_file_);
+  fflush(log_file_);
+  //log_file_.close();
   //log_file_.open(filename_);
 	// TODO: Where to close the ofstream?
 }

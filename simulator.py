@@ -119,7 +119,7 @@ def runPeer(trusted = False, malicious = False, ds = False):
         ttl = None
     
     run(runStr, open("{0}/peer{1}.out".format(experiment_path,port), "w"), "127.0.0.1:"+str(port), ttl , peertype)
-    time.sleep(0.1)
+    time.sleep(0.01)
 
 
     #run netcat
@@ -189,7 +189,7 @@ def churn():
     #while TOTAL_TIME > (time.time()-INIT_TIME):
 
         current_round = findLastRound()
-        
+        print current_round
         #print("slotsMP: ",slotsMP, " slotsTP: ", slotsTP, " nPeersTeam: ", nPeersTeam, " current_round ", current_round)
         
         if last_round < current_round:
@@ -270,7 +270,7 @@ def churn():
                             angry_peers_retired.append(p[1])
                             
                             nPeersTeam-=1
-
+        
         #print "Timer: "+ str(TIMER)
         #time.sleep(0.5)
 
