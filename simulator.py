@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
 import os, sys, getopt, shutil
@@ -88,6 +88,7 @@ def runSplitter(ds = False):
 
 def runPeer(trusted = False, malicious = False, ds = False):
     global port, playerPort
+    monitor = True
     #run peer
     runStr = "./console/bin/peer --splitter_port 8001 --use_localhost --team_port {0} --player_port {1}".format(port, playerPort)
 
@@ -103,17 +104,22 @@ def runPeer(trusted = False, malicious = False, ds = False):
 
     #Weibull distribution in this random number:
     if (peertype == "WIP"):
-        ttl = int(round(np.random.weibull(WEIBULL_SHAPE) * WEIBULL_TIME))
-        print " / ttl =", ttl,
-        ttl = ttl + int(time.time()-INIT_TIME)
-        print "("+str(ttl)+")"
-        alias = "127.0.0.1:"+str(port)
+        if not monitor:    
+            ttl = int(round(np.random.weibull(WEIBULL_SHAPE) * WEIBULL_TIME))
+            print " / ttl =", ttl,
+            ttl = ttl + int(time.time()-INIT_TIME)
+            print "("+str(ttl)+")"
+            alias = "127.0.0.1:"+str(port)
+        else:
+            print ""
+            ttl = None
+            monitor = False
     else:
         print ""
         ttl = None
     
     run(runStr, open("{0}/peer{1}.out".format(experiment_path,port), "w"), "127.0.0.1:"+str(port), ttl , peertype)
-    #time.sleep(0.1)
+    time.sleep(0.1)
 
 
     #run netcat
@@ -182,11 +188,13 @@ def churn():
     while not isTheTeamStable():
     #while TOTAL_TIME > (time.time()-INIT_TIME):
 
-        #print("slotsMP: ",slotsMP, "slotsTP: ", slotsTP, "nPeersTeam: ", nPeersTeam)
         current_round = findLastRound()
-        if last_round < current_round:
+        
+        #print("slotsMP: ",slotsMP, " slotsTP: ", slotsTP, " nPeersTeam: ", nPeersTeam, " current_round ", current_round)
+        
+        if last_round+10 < current_round:
             last_round = current_round
-            print("-------> Current Round: "+str(current_round))
+            print("\n-------> Current Round: "+str(current_round))
 
             # Arrival of regular or malicious peers
             r = random.randint(1,100)
@@ -294,11 +302,15 @@ def getLastBufferFor(inFile):
 
     regex_fullness = re.compile("(\d*.\d*)\tbuffer\sfullness\s(\d*.\d*)")
     fullness = 0.
-    with open(inFile) as f:
-        for line in f:
-            pass
-
-    result = regex_fullness.match(line)
+    #with open(inFile) as f:
+    #    for line in f:
+    #        pass
+    
+    runStr = "grep fullness "+inFile+" | tail -n 1"
+    proc = subprocess.Popen(runStr, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    
+    result = regex_fullness.match(out)
     if result != None:
         fullness = float(result.group(2))
 
@@ -363,24 +375,29 @@ def checkForTrusted():
 def checkForPeersExpelled():
     global mp_expelled_by_tps, tp_expelled_by_splitter
     peer_type = "WIP"
-    with open("{0}/splitter.log".format(experiment_path)) as fh:
-        for line in fh:
-            result = re.match("(\d*)\tbad peer ([0-9]+(?:\.[0-9]+){3}:[0-9]+)\((.*?)\)", line)
-            if result != None:
-                if result.group(2) in trusted_peers:
-                    if result.group(2) not in tp_expelled_by_splitter:
-                        peer_type = "TP"
-                        tp_expelled_by_splitter.append(result.group(2))
-                elif result.group(2) not in mp_expelled_by_tps:
-                    peer_type = "MP"
-                    mp_expelled_by_tps.append(result.group(2))
+    #with open("{0}/splitter.log".format(experiment_path)) as fh:
+    
+    runStr = "grep bad "+experiment_path+"/splitter.log"
+    proc = subprocess.Popen(runStr, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    #print out
+    for line in out:
+        result = re.match("(\d*)\tbad peer ([0-9]+(?:\.[0-9]+){3}:[0-9]+)\((.*?)\)", line)
+        if result != None:
+            if result.group(2) in trusted_peers:
+                if result.group(2) not in tp_expelled_by_splitter:
+                    peer_type = "TP"
+                    tp_expelled_by_splitter.append(result.group(2))
+            elif result.group(2) not in mp_expelled_by_tps:
+                peer_type = "MP"
+                mp_expelled_by_tps.append(result.group(2))
                 
-                if peer_type != "WIP":   
-                    for p in processes:
-                        if (p[1] == result.group(2)) and (p[0].poll() == None):
-                            p[0].kill()
+            if peer_type != "WIP":   
+                for p in processes:
+                    if (p[1] == result.group(2)) and (p[0].poll() == None):
+                        p[0].kill()
                         
-                    return (peer_type,result.group(2) +" ("+ result.group(3)+")")
+                return (peer_type,result.group(2) +" ("+ result.group(3)+")")
     return (None, None)
 
 def saveLastRound():
@@ -388,13 +405,21 @@ def saveLastRound():
     LAST_ROUND_NUMBER = findLastRound()
 
 def findLastRound():
-    with open("{0}/splitter.log".format(experiment_path)) as fh:
-        for line in fh:
-            pass
-        result = re.match("(\d*)\t(\d*)\s(\d*).*", line)
-        if result != None:
-             return int(result.group(1))
-    return -1
+    #with open("{0}/splitter.log".format(experiment_path)) as fh:
+    #    for line in fh:
+    #        pass
+    #    result = re.match("(\d*)\t(\d*)\s(\d*).*", line)
+    #    if result != None:
+    #         return int(result.group(1))
+    #return -1
+    runStr = "tail -n 1 "+experiment_path+"/splitter.log | awk '{print $1}'"
+    proc = subprocess.Popen(runStr, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+
+    if (out != ''):
+        return int(out)
+    else:
+        return -1
 
 def cleanline():
     print '\r', " "*60, '\r',
