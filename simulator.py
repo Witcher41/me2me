@@ -192,7 +192,7 @@ def churn():
         
         #print("slotsMP: ",slotsMP, " slotsTP: ", slotsTP, " nPeersTeam: ", nPeersTeam, " current_round ", current_round)
         
-        if last_round+10 < current_round:
+        if last_round < current_round:
             last_round = current_round
             print("\n-------> Current Round: "+str(current_round))
 
