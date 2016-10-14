@@ -23,7 +23,7 @@ port = 50000
 playerPort = 51000
 
 currentRound = 0
-rounds_for_stability = 100
+rounds_for_stability = 200
 first_stability_round = 0
 LAST_ROUND_NUMBER = 0
 
@@ -119,7 +119,7 @@ def runPeer(trusted = False, malicious = False, ds = False):
         ttl = None
     
     run(runStr, open("{0}/peer{1}.out".format(experiment_path,port), "w"), "127.0.0.1:"+str(port), ttl , peertype)
-    time.sleep(0.01)
+    time.sleep(0.005)
 
 
     #run netcat
@@ -189,7 +189,6 @@ def churn():
     #while TOTAL_TIME > (time.time()-INIT_TIME):
 
         current_round = findLastRound()
-        print current_round
         #print("slotsMP: ",slotsMP, " slotsTP: ", slotsTP, " nPeersTeam: ", nPeersTeam, " current_round ", current_round)
         
         if last_round < current_round:
