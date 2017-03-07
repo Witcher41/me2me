@@ -1,5 +1,7 @@
 # P2PSP War Games
 
+[![Join the chat at https://gitter.im/P2PSP/CIS-MPs-estimator](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/P2PSP/CIS-MPs-estimator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Test bed to measure the impact of several types of attacks in a P2PSP Team.
 
 ## Cloning
